@@ -1,43 +1,55 @@
 # projeto-1-cv
 
-Projeto 1 da disciplina de **Computação Visual** (UPM FCI CC) — 2026.2.
+Projeto 1 — Computação Visual (UPM FCI CC), 2026.2.
+Ferramenta de processamento de imagens em C + SDL3.
 
-Aplicação em C (C23) usando **SDL3** para renderização.
+> Este README é preenchido pelos integrantes do grupo. Os itens abaixo são exigidos
+> pela rubrica (arquivo estruturado, com explicações detalhadas). Substitua cada `TODO`.
 
-## Dependências
+## Grupo
 
-- `gcc` (ou outro compilador C com suporte a C23)
-- `make`
-- **SDL3** (com `pkg-config` configurado)
+<!-- TODO: Nome completo + RA de cada integrante -->
 
-No CachyOS / Arch:
+## O que é o projeto
+
+<!-- TODO: descrição do software e do que ele faz -->
+
+## Como funciona
+
+<!-- TODO: visão geral do funcionamento (janelas, fluxo, operações de imagem) -->
+
+## Contribuições
+
+<!-- TODO: o que cada integrante implementou -->
+
+## Compilação e execução
+
+### Dependências
+
+- `gcc` (C23) e `make`
+- SDL3 e SDL_image (via `pkg-config`)
+
+No CachyOS / Arch: `sudo pacman -S base-devel sdl3 sdl3_image`
+
+### Build
 
 ```sh
-sudo pacman -S base-devel sdl3
-```
-
-## Build
-
-```sh
-make            # compila em ./projeto-1-cv
+make            # gera ./projeto-1-cv
 make run        # compila e executa
-make DEBUG=1    # build com símbolos + AddressSanitizer/UBSan
-make clean      # remove build/ e o executável
+make DEBUG=1    # build com AddressSanitizer / UBSan
+make clean
 ```
 
-Os objetos e arquivos de dependência ficam em `build/`.
+### Execução
 
-## Estrutura
+```sh
+./projeto-1-cv caminho/para/imagem.png
+```
 
-```
-.
-├── Makefile
-├── src/
-│   └── main.c     # ponto de entrada: abre uma janela SDL3 vazia
-├── LICENSE
-└── README.md
-```
+### Ambientes usados pelo grupo
+
+<!-- TODO: SO + versão, compilador + versão, SDL + versão, editor — de cada integrante -->
 
 ## Licença
 
-[MIT](LICENSE) © 2026 Matheus Araujo
+[MIT](LICENSE)

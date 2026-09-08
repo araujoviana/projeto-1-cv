@@ -30,11 +30,25 @@ projeto-1-cv
 *.idb
 *.dwo
 
-# Repositorio de referencia da disciplina (clone separado)
+# Material da disciplina e codigo-base de referencia (clones/symlinks locais)
 /CompVis262/
+/COMP-VIS
+/COMP-VIS/
 
-# Editors / OS
+# Program output
+output_image.png
+
+# Tests (TDD local — nunca versionados)
+/tests/
+
+# Instruções e config de agente — locais, fora do repositório
+/CLAUDE.md
+/.claude/
+
+# Editors / OS / tooling
 .vscode/
 .idea/
 *.swp
 .DS_Store
+compile_commands.json
+.cache/

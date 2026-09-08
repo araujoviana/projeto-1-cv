@@ -1,0 +1,15 @@
+# Matches the style of the course base code (CompVis262): Allman braces,
+# 2-space indent, pointer bound to the name.
+Language: Cpp
+BasedOnStyle: LLVM
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ColumnLimit: 100
+BreakBeforeBraces: Allman
+PointerAlignment: Right
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+SortIncludes: false
+SpaceAfterCStyleCast: false
