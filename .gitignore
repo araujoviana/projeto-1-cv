@@ -1,0 +1,40 @@
+# Build
+/build/
+projeto-1-cv
+
+# Object / dependency files
+*.o
+*.obj
+*.d
+*.gch
+*.pch
+
+# Libraries / shared objects
+*.a
+*.la
+*.lo
+*.so
+*.so.*
+*.dll
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Debug info
+*.dSYM/
+*.su
+*.pdb
+*.idb
+*.dwo
+
+# Repositorio de referencia da disciplina (clone separado)
+/CompVis262/
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
