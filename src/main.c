@@ -1,55 +1,67 @@
-// SPDX-License-Identifier: MIT
-// Projeto 1 - Computacao Visual (UPM FCI CC) - 2026.2
+//------------------------------------------------------------------------------
+// Includes
+//------------------------------------------------------------------------------
 
+#include <stdlib.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
-enum
-{
-  WINDOW_WIDTH = 800,
-  WINDOW_HEIGHT = 600,
-};
+#include "interface.h"
+#include "event.h"
 
-static const char *WINDOW_TITLE = "Projeto 1 - CV";
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
+
+static MainWindow mw;
+static HistogramWindow hw;
+
+static void shutdown_app(void)
+{
+  MainWindow_shutdown(&mw);
+  HistogramWindow_shutdown(&hw);
+  Interface_quit_sdl();
+}
 
 int main(int argc, char *argv[])
 {
-  (void)argc;
-  (void)argv;
+  atexit(shutdown_app);
 
-  if (!SDL_Init(SDL_INIT_VIDEO))
+  if (argc != 2)
   {
-    SDL_Log("Erro ao iniciar a SDL: %s", SDL_GetError());
-    return 1;
+    SDL_Log("Erro de chamada de programa: Forneca uma imagem como argumento.");
+    return SDL_APP_FAILURE;
+  }
+  const char *IMAGE_FILENAME = argv[1];
+
+  if (!Interface_init_sdl())
+  {
+    return SDL_APP_FAILURE;
   }
 
-  SDL_Window *window = NULL;
-  SDL_Renderer *renderer = NULL;
-  if (!SDL_CreateWindowAndRenderer(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT, 0, &window,
-                                   &renderer))
+  if (!MainWindow_initialize(&mw, "Imagem Original"))
   {
-    SDL_Log("Erro ao criar janela/renderizador: %s", SDL_GetError());
-    SDL_Quit();
-    return 1;
+    return SDL_APP_FAILURE;
   }
 
-  bool running = true;
-  while (running)
+  if (!HistogramWindow_initialize(&hw, "Histograma e Analise"))
   {
-    SDL_Event event;
-    while (SDL_PollEvent(&event))
-    {
-      if (event.type == SDL_EVENT_QUIT)
-        running = false;
-    }
-
-    SDL_SetRenderDrawColor(renderer, 24, 24, 24, SDL_ALPHA_OPAQUE);
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
+    return SDL_APP_FAILURE;
   }
 
-  SDL_DestroyRenderer(renderer);
-  SDL_DestroyWindow(window);
-  SDL_Quit();
+  if (!MainWindow_load_image(&mw, IMAGE_FILENAME))
+  {
+    return SDL_APP_FAILURE;
+  }
+
+  if (!MainWindow_convert_image(&mw))
+  {
+    return SDL_APP_FAILURE;
+  }
+
+  HistogramWindow_update_statistics(&hw, &mw);
+
+  Event_loop(&mw, &hw);
+
   return 0;
 }

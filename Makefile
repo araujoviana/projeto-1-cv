@@ -3,25 +3,29 @@
 TARGET  := projeto-1-cv
 SRC_DIR := src
 BUILD_DIR := build
+INC_DIR := include
+LIB_DIR := lib
 
 SRCS := $(wildcard $(SRC_DIR)/*.c)
 OBJS := $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
 CC      := gcc
-CFLAGS  := -std=c23 -Wall -Wextra -Wpedantic -MMD -MP
+CFLAGS  := -std=c23 -Wall -Wextra -Wpedantic -MMD -MP -I$(INC_DIR)
 LDFLAGS :=
 LDLIBS  :=
 
-# SDL3 via pkg-config (fallback para -lSDL3 caso pkg-config nao encontre).
-SDL_CFLAGS := $(shell pkg-config --cflags sdl3 2>/dev/null)
-SDL_LIBS   := $(shell pkg-config --libs sdl3 2>/dev/null)
+# SDL3 + SDL_image + SDL_ttf via pkg-config (fallback para as DLLs
+# vendorizadas em lib/ quando pkg-config nao encontra os modulos, como em
+# Windows sem MSYS2; os headers vendorizados em include/ ja estao no CFLAGS).
+SDL_CFLAGS := $(shell pkg-config --cflags sdl3 sdl3-image sdl3-ttf 2>/dev/null)
+SDL_LIBS   := $(shell pkg-config --libs sdl3 sdl3-image sdl3-ttf 2>/dev/null)
 ifeq ($(strip $(SDL_LIBS)),)
-SDL_LIBS := -lSDL3
+SDL_LIBS := -L$(LIB_DIR) -lSDL3 -lSDL3_image -lSDL3_ttf
 endif
 
 CFLAGS += $(SDL_CFLAGS)
-LDLIBS += $(SDL_LIBS)
+LDLIBS += $(SDL_LIBS) -lm
 
 # make DEBUG=1 para build com simbolos e sanitizers.
 ifeq ($(DEBUG),1)
