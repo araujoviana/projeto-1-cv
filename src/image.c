@@ -5,6 +5,7 @@
 #include "image.h"
 #include <SDL3_image/SDL_image.h>
 #include <string.h>
+#include <math.h>
 
 static SDL_Surface *surfaceFilter = NULL;
 static SDL_Cursor *defaultMouseCursor = NULL;
@@ -283,4 +284,55 @@ bool Image_load(const char *filename, SDL_Renderer *renderer, Image *output_imag
 	
 	SDL_Log("<<< Image_load(\"%s\")", filename);
 	return true;
+}
+
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
+
+void Image_calculate_statistics(Image* image, unsigned int histogram[256], float* mean, float* std_dev)
+{
+    SDL_Log(">>> Image_calculate_statistics()");
+    if (!image) return;
+    
+    SDL_Surface* target = surfaceFilter ? surfaceFilter : image->surface;
+    if (!target) return;
+    
+    SDL_LockSurface(target);
+    const SDL_PixelFormatDetails *format = SDL_GetPixelFormatDetails(target->format);
+    Uint32 *pixels = (Uint32 *)target->pixels;
+    
+    double sum = 0.0;
+    int count = target->w * target->h;
+    
+    for (int i = 0; i < count; ++i) {
+        Uint8 r, g, b;
+        SDL_GetRGB(pixels[i], format, NULL, &r, &g, &b);
+        Uint8 lum = (r == g && g == b) ? r : (Uint8)(0.2125*r + 0.7154*g + 0.0721*b);
+        histogram[lum]++;
+        sum += lum;
+    }
+    
+    *mean = (float)(sum / count);
+    
+    double sum_sq_diff = 0.0;
+    for (int i = 0; i < count; ++i) {
+        Uint8 r, g, b;
+        SDL_GetRGB(pixels[i], format, NULL, &r, &g, &b);
+        Uint8 lum = (r == g && g == b) ? r : (Uint8)(0.2125*r + 0.7154*g + 0.0721*b);
+        float diff = lum - *mean;
+        sum_sq_diff += diff * diff;
+    }
+    *std_dev = (float)sqrt(sum_sq_diff / count);
+    
+    SDL_UnlockSurface(target);
+    
+    const char* brilho = (*mean > 127.5f) ? "Clara" : "Escura";
+    const char* contraste = (*std_dev > 50.0f) ? "Alto" : "Baixo";
+    
+    SDL_Log("--- Estatisticas do Histograma ---");
+    SDL_Log("Media de Intensidade: %.2f (Imagem %s)", *mean, brilho);
+    SDL_Log("Desvio Padrao: %.2f (Contraste %s)", *std_dev, contraste);
+    SDL_Log("----------------------------------");
+    SDL_Log("<<< Image_calculate_statistics()");
 }

@@ -25,6 +25,7 @@ bool Image_convert(Image* image, SDL_Renderer *renderer);
 
 void Image_destroy(Image *image);
 void Image_set_bounds(Image *image, float x, float y, float width, float height);
+void Image_calculate_statistics(Image* image, unsigned int histogram[256], float* mean, float* std_dev);
 
 //=================================================================================================
 

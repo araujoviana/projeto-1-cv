@@ -1,0 +1,7 @@
+# Object files
+obj/
+*.o
+
+# Executables
+bin/main.exe
+*.exe
