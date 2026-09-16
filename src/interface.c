@@ -12,8 +12,10 @@
 
 enum constants
 {
-  DEFAULT_WINDOW_WIDTH = 640,
-  DEFAULT_WINDOW_HEIGHT = 480,
+  MAIN_WINDOW_WIDTH = 1024,
+  MAIN_WINDOW_HEIGHT = 768,
+  HISTOGRAM_WINDOW_WIDTH = 640,
+  HISTOGRAM_WINDOW_HEIGHT = 480,
   DEFAULT_WINDOW_TITLE_MAX_LENGTH = 64,
 };
 
@@ -57,13 +59,17 @@ bool MainWindow_initialize(MainWindow *mw, const char *title)
   mw->image.texture = NULL;
   mw->image.rect.x = 0.0f;
   mw->image.rect.y = 0.0f;
-  mw->image.rect.w = DEFAULT_WINDOW_WIDTH;
-  mw->image.rect.h = DEFAULT_WINDOW_HEIGHT;
+  mw->image.rect.w = MAIN_WINDOW_WIDTH;
+  mw->image.rect.h = MAIN_WINDOW_HEIGHT;
+  mw->equalized = false;
+  mw->resolution_is_original = false;
 
-  if (!Window_initialize(&mw->window, title, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, 0))
+  if (!Window_initialize(&mw->window, title, MAIN_WINDOW_WIDTH, MAIN_WINDOW_HEIGHT, 0))
   {
     return false;
   }
+
+  SDL_SetWindowPosition(mw->window.window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   return true;
 }
 
@@ -73,7 +79,7 @@ bool MainWindow_load_image(MainWindow *mw, const char *filename)
   {
     return false;
   }
-  Image_set_bounds(&mw->image, 0.0f, 0.0f, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT);
+  Image_set_bounds(&mw->image, 0.0f, 0.0f, (float)MAIN_WINDOW_WIDTH, (float)MAIN_WINDOW_HEIGHT);
   return true;
 }
 
@@ -82,6 +88,69 @@ bool MainWindow_convert_image(MainWindow *mw)
   bool result = Image_convert(&mw->image, mw->window.renderer);
   MainWindow_render(mw);
   return result;
+}
+
+void MainWindow_toggle_equalization(MainWindow *mw)
+{
+  if (!mw)
+    return;
+
+  if (mw->equalized)
+  {
+    Image_show_original(&mw->image, mw->window.renderer);
+    mw->equalized = false;
+  }
+  else
+  {
+    Image_equalize(&mw->image, mw->window.renderer);
+    mw->equalized = true;
+  }
+  MainWindow_render(mw);
+}
+
+void MainWindow_toggle_resolution(MainWindow *mw)
+{
+  if (!mw || !mw->window.window)
+    return;
+
+  int target_w = 0;
+  int target_h = 0;
+
+  if (mw->resolution_is_original)
+  {
+    target_w = MAIN_WINDOW_WIDTH;
+    target_h = MAIN_WINDOW_HEIGHT;
+    mw->resolution_is_original = false;
+  }
+  else
+  {
+    target_w = mw->image.surface ? mw->image.surface->w : MAIN_WINDOW_WIDTH;
+    target_h = mw->image.surface ? mw->image.surface->h : MAIN_WINDOW_HEIGHT;
+    mw->resolution_is_original = true;
+  }
+
+  SDL_SetWindowSize(mw->window.window, target_w, target_h);
+  Image_set_bounds(&mw->image, 0.0f, 0.0f, (float)target_w, (float)target_h);
+
+  SDL_Rect bounds = {0};
+  SDL_DisplayID display_id = SDL_GetPrimaryDisplay();
+  if (display_id != 0 && SDL_GetDisplayBounds(display_id, &bounds))
+  {
+    if (target_w > bounds.w || target_h > bounds.h)
+    {
+      SDL_SetWindowPosition(mw->window.window, 0, 0);
+    }
+    else
+    {
+      SDL_SetWindowPosition(mw->window.window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    }
+  }
+  else
+  {
+    SDL_SetWindowPosition(mw->window.window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+  }
+
+  MainWindow_render(mw);
 }
 
 void MainWindow_render(MainWindow *mw)
@@ -100,9 +169,8 @@ void MainWindow_shutdown(MainWindow *mw)
 
 void MainWindow_update_mouse_title(MainWindow *mw, float mouse_x, float mouse_y)
 {
-  char windowTitle[DEFAULT_WINDOW_TITLE_MAX_LENGTH] = {0};
-  snprintf(windowTitle, DEFAULT_WINDOW_TITLE_MAX_LENGTH, "%s (%.0f, %.0f)", mw->title, mouse_x,
-           mouse_y);
+  char windowTitle[128] = {0};
+  snprintf(windowTitle, sizeof(windowTitle), "%s (%.0f, %.0f)", mw->title, mouse_x, mouse_y);
   SDL_SetWindowTitle(mw->window.window, windowTitle);
 }
 
@@ -128,6 +196,26 @@ static void render_text(SDL_Renderer *renderer, TTF_Font *font, const char *text
   SDL_DestroySurface(surface);
 }
 
+static void render_text_centered(SDL_Renderer *renderer, TTF_Font *font, const char *text,
+                                 const SDL_FRect *rect, SDL_Color color)
+{
+  if (!font || !text || !rect)
+    return;
+  SDL_Surface *surface = TTF_RenderText_Blended(font, text, 0, color);
+  if (!surface)
+    return;
+  SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+  if (texture)
+  {
+    SDL_FRect dest = {rect->x + (rect->w - (float)surface->w) / 2.0f,
+                      rect->y + (rect->h - (float)surface->h) / 2.0f, (float)surface->w,
+                      (float)surface->h};
+    SDL_RenderTexture(renderer, texture, NULL, &dest);
+    SDL_DestroyTexture(texture);
+  }
+  SDL_DestroySurface(surface);
+}
+
 bool HistogramWindow_initialize(HistogramWindow *hw, const char *title)
 {
   strncpy(hw->title, title, sizeof(hw->title) - 1);
@@ -137,6 +225,8 @@ bool HistogramWindow_initialize(HistogramWindow *hw, const char *title)
   memset(hw->histogram, 0, sizeof(hw->histogram));
   hw->mean = 0.0f;
   hw->std_dev = 0.0f;
+  hw->btn1_hover = false;
+  hw->btn2_hover = false;
 
   // Define buttons bounds (bottom of window)
   float btn_w = 200.0f;
@@ -146,22 +236,38 @@ bool HistogramWindow_initialize(HistogramWindow *hw, const char *title)
   hw->btn1_rect.w = btn_w;
   hw->btn1_rect.h = btn_h;
   hw->btn1_rect.x = padding;
-  hw->btn1_rect.y = DEFAULT_WINDOW_HEIGHT - btn_h - padding;
+  hw->btn1_rect.y = HISTOGRAM_WINDOW_HEIGHT - btn_h - padding;
 
   hw->btn2_rect.w = btn_w;
   hw->btn2_rect.h = btn_h;
-  hw->btn2_rect.x = DEFAULT_WINDOW_WIDTH - btn_w - padding;
-  hw->btn2_rect.y = DEFAULT_WINDOW_HEIGHT - btn_h - padding;
+  hw->btn2_rect.x = HISTOGRAM_WINDOW_WIDTH - btn_w - padding;
+  hw->btn2_rect.y = HISTOGRAM_WINDOW_HEIGHT - btn_h - padding;
 
-  if (!Window_initialize(&hw->window, title, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, 0))
+  if (!Window_initialize(&hw->window, title, HISTOGRAM_WINDOW_WIDTH, HISTOGRAM_WINDOW_HEIGHT, 0))
   {
     return false;
   }
 
-  hw->font = TTF_OpenFont("C:/Windows/Fonts/arial.ttf", 16);
+  SDL_SetWindowPosition(hw->window.window, 0, 0);
+
+  const char *font_paths[] = {"C:/Windows/Fonts/arial.ttf",
+                              "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                              "/usr/share/fonts/TTF/DejaVuSans.ttf",
+                              "/usr/share/fonts/liberation/LiberationSans-Regular.ttf",
+                              "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                              NULL};
+  hw->font = NULL;
+  for (int i = 0; font_paths[i] != NULL; ++i)
+  {
+    hw->font = TTF_OpenFont(font_paths[i], 16);
+    if (hw->font)
+    {
+      break;
+    }
+  }
   if (!hw->font)
   {
-    SDL_Log("Aviso: Nao foi possivel carregar a fonte arial.ttf. Textos não serao exibidos.");
+    SDL_Log("Aviso: Nao foi possivel carregar a fonte. Textos não serao exibidos.");
   }
 
   return true;
@@ -170,10 +276,10 @@ bool HistogramWindow_initialize(HistogramWindow *hw, const char *title)
 void HistogramWindow_update_statistics(HistogramWindow *hw, MainWindow *mw)
 {
   Image_calculate_statistics(&mw->image, hw->histogram, &hw->mean, &hw->std_dev);
-  HistogramWindow_render(hw);
+  HistogramWindow_render(hw, mw);
 }
 
-void HistogramWindow_render(HistogramWindow *hw)
+void HistogramWindow_render(HistogramWindow *hw, MainWindow *mw)
 {
   SDL_Renderer *renderer = hw->window.renderer;
 
@@ -212,8 +318,24 @@ void HistogramWindow_render(HistogramWindow *hw)
                  hist_y_start - hist_height); // Y axis
 
   // Draw buttons
-  SDL_SetRenderDrawColor(renderer, 70, 130, 180, 255); // Steel Blue
+  if (hw->btn1_hover)
+  {
+    SDL_SetRenderDrawColor(renderer, 100, 160, 220, 255); // Azul claro (hover)
+  }
+  else
+  {
+    SDL_SetRenderDrawColor(renderer, 70, 130, 180, 255); // Azul neutro
+  }
   SDL_RenderFillRect(renderer, &hw->btn1_rect);
+
+  if (hw->btn2_hover)
+  {
+    SDL_SetRenderDrawColor(renderer, 100, 160, 220, 255); // Azul claro (hover)
+  }
+  else
+  {
+    SDL_SetRenderDrawColor(renderer, 70, 130, 180, 255); // Azul neutro
+  }
   SDL_RenderFillRect(renderer, &hw->btn2_rect);
 
   // Button borders
@@ -226,8 +348,9 @@ void HistogramWindow_render(HistogramWindow *hw)
   {
     SDL_Color textColor = {255, 255, 255, 255};
     char statBuf[128];
-    const char *brilho = (hw->mean > 127.5f) ? "Clara" : "Escura";
-    const char *contraste = (hw->std_dev > 50.0f) ? "Alto" : "Baixo";
+    const char *brilho = (hw->mean < 85.0f) ? "Escura" : ((hw->mean <= 170.0f) ? "Média" : "Clara");
+    const char *contraste =
+        (hw->std_dev < 30.0f) ? "Baixo" : ((hw->std_dev <= 60.0f) ? "Médio" : "Alto");
 
     snprintf(statBuf, sizeof(statBuf), "Media de Intensidade: %.2f (Imagem %s)", hw->mean, brilho);
     render_text(renderer, hw->font, statBuf, 50.0f, 320.0f, textColor);
@@ -237,10 +360,11 @@ void HistogramWindow_render(HistogramWindow *hw)
     render_text(renderer, hw->font, statBuf, 50.0f, 350.0f, textColor);
 
     // Button text
-    render_text(renderer, hw->font, "Botao 1 (Placeholder)", hw->btn1_rect.x + 20,
-                hw->btn1_rect.y + 10, textColor);
-    render_text(renderer, hw->font, "Botao 2 (Placeholder)", hw->btn2_rect.x + 20,
-                hw->btn2_rect.y + 10, textColor);
+    const char *btn1_text = (mw && mw->equalized) ? "Ver original" : "Equalizar";
+    const char *btn2_text = (mw && mw->resolution_is_original) ? "1024x768" : "Resolução original";
+
+    render_text_centered(renderer, hw->font, btn1_text, &hw->btn1_rect, textColor);
+    render_text_centered(renderer, hw->font, btn2_text, &hw->btn2_rect, textColor);
   }
 
   SDL_RenderPresent(renderer);

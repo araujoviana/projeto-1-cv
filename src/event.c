@@ -24,7 +24,7 @@ void Event_loop(MainWindow *mw, HistogramWindow *hw)
   SDL_Log(">>> Event_loop()");
 
   MainWindow_render(mw);
-  HistogramWindow_render(hw);
+  HistogramWindow_render(hw, mw);
 
   SDL_Event event;
   bool isRunning = true;
@@ -51,20 +51,57 @@ void Event_loop(MainWindow *mw, HistogramWindow *hw)
         {
           MainWindow_update_mouse_title(mw, event.motion.x, event.motion.y);
         }
+        else if (event.motion.windowID == hw_id)
+        {
+          bool h1 = is_point_in_rect(event.motion.x, event.motion.y, &hw->btn1_rect);
+          bool h2 = is_point_in_rect(event.motion.x, event.motion.y, &hw->btn2_rect);
+          if (h1 != hw->btn1_hover || h2 != hw->btn2_hover)
+          {
+            hw->btn1_hover = h1;
+            hw->btn2_hover = h2;
+            HistogramWindow_render(hw, mw);
+          }
+        }
+        break;
+
+      case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+        if (event.window.windowID == hw_id)
+        {
+          if (hw->btn1_hover || hw->btn2_hover)
+          {
+            hw->btn1_hover = false;
+            hw->btn2_hover = false;
+            HistogramWindow_render(hw, mw);
+          }
+        }
         break;
 
       case SDL_EVENT_MOUSE_BUTTON_DOWN:
-        if (event.button.windowID == hw_id)
+        if (event.button.windowID == hw_id && event.button.button == SDL_BUTTON_LEFT)
         {
           float x = event.button.x;
           float y = event.button.y;
           if (is_point_in_rect(x, y, &hw->btn1_rect))
           {
-            SDL_Log("[Ação] Botão 1 clicado no Histograma!");
+            SDL_Log("[Ação] Botão de equalização clicado!");
+            SDL_SetRenderDrawColor(hw->window.renderer, 30, 70, 130, 255);
+            SDL_RenderFillRect(hw->window.renderer, &hw->btn1_rect);
+            SDL_RenderPresent(hw->window.renderer);
+            SDL_Delay(80); // deixa o estado "clicado" visivel antes de redesenhar
+
+            MainWindow_toggle_equalization(mw);
+            HistogramWindow_update_statistics(hw, mw);
           }
           else if (is_point_in_rect(x, y, &hw->btn2_rect))
           {
-            SDL_Log("[Ação] Botão 2 clicado no Histograma!");
+            SDL_Log("[Ação] Botão de alternância de resolução clicado!");
+            SDL_SetRenderDrawColor(hw->window.renderer, 30, 70, 130, 255);
+            SDL_RenderFillRect(hw->window.renderer, &hw->btn2_rect);
+            SDL_RenderPresent(hw->window.renderer);
+            SDL_Delay(80); // deixa o estado "clicado" visivel antes de redesenhar
+
+            MainWindow_toggle_resolution(mw);
+            HistogramWindow_render(hw, mw);
           }
         }
         break;

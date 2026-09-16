@@ -1,6 +1,6 @@
 # projeto-1-cv
 
-Projeto 1 — Computação Visual (UPM FCI CC), 2026.2.
+Projeto 1 - Computação Visual (UPM FCI CC), 2026.2.
 Ferramenta de processamento de imagens em C + SDL3.
 
 > Este README é preenchido pelos integrantes do grupo. Os itens abaixo são exigidos
@@ -48,7 +48,7 @@ make clean
 
 ### Ambientes usados pelo grupo
 
-<!-- TODO: SO + versão, compilador + versão, SDL + versão, editor — de cada integrante -->
+<!-- TODO: SO + versão, compilador + versão, SDL + versão, editor - de cada integrante -->
 
 ## Licença
 

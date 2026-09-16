@@ -8,6 +8,8 @@
 #include <math.h>
 
 static SDL_Surface *surfaceFilter = NULL;
+static SDL_Surface *surfaceEqualized = NULL;
+static SDL_Surface *currentSurface = NULL;
 static SDL_Cursor *defaultMouseCursor = NULL;
 static SDL_Cursor *hourglassMouseCursor = NULL;
 
@@ -116,6 +118,7 @@ bool Image_convert(Image *image, SDL_Renderer *renderer)
   SDL_UnlockSurface(image->surface);
 
   Image_update_texture_with_surface(image, renderer, surfaceFilter);
+  currentSurface = surfaceFilter;
 
   if (!escala_cinza)
   {
@@ -184,6 +187,143 @@ bool Image_update_texture_with_surface(Image *image, SDL_Renderer *renderer, SDL
 //
 //------------------------------------------------------------------------------
 
+bool Image_equalize(Image *image, SDL_Renderer *renderer)
+{
+  SDL_Log(">>> Image_equalize()");
+
+  if (!image || !image->surface)
+  {
+    SDL_Log("\t*** Erro: Imagem inválida (image == NULL ou image->surface == NULL).");
+    SDL_Log("<<< Image_equalize()");
+    return false;
+  }
+
+  if (!renderer)
+  {
+    SDL_Log("\t*** Erro: Renderer inválido (renderer == NULL).");
+    SDL_Log("<<< Image_equalize()");
+    return false;
+  }
+
+  if (!surfaceFilter)
+  {
+    SDL_Log("\t*** Erro: Superfície base (surfaceFilter) ausente.");
+    SDL_Log("<<< Image_equalize()");
+    return false;
+  }
+
+  if (!surfaceEqualized)
+  {
+    surfaceEqualized =
+        SDL_CreateSurface(surfaceFilter->w, surfaceFilter->h, surfaceFilter->format);
+    if (!surfaceEqualized)
+    {
+      SDL_Log("\t*** Erro ao criar superfície equalizada: %s", SDL_GetError());
+      SDL_Log("<<< Image_equalize()");
+      return false;
+    }
+  }
+
+  int count = surfaceFilter->w * surfaceFilter->h;
+  if (count <= 0)
+  {
+    SDL_Log("\t*** Erro: Dimensões da imagem inválidas.");
+    SDL_Log("<<< Image_equalize()");
+    return false;
+  }
+
+  SDL_LockSurface(surfaceFilter);
+  const SDL_PixelFormatDetails *format = SDL_GetPixelFormatDetails(surfaceFilter->format);
+  const Uint32 *in_pixels = (const Uint32 *)surfaceFilter->pixels;
+
+  unsigned int hist[256] = {0};
+  for (int i = 0; i < count; ++i)
+  {
+    Uint8 r, g, b;
+    SDL_GetRGB(in_pixels[i], format, NULL, &r, &g, &b);
+    hist[r]++;
+  }
+
+  Uint8 lut[256];
+  unsigned long long cum = 0;
+  for (int k = 0; k < 256; ++k)
+  {
+    cum += hist[k];
+    double sk = round(255.0 * (double)cum / (double)count);
+    if (sk < 0.0)
+    {
+      sk = 0.0;
+    }
+    else if (sk > 255.0)
+    {
+      sk = 255.0;
+    }
+    lut[k] = (Uint8)sk;
+  }
+
+  SDL_LockSurface(surfaceEqualized);
+  Uint32 *out_pixels = (Uint32 *)surfaceEqualized->pixels;
+
+  for (int i = 0; i < count; ++i)
+  {
+    Uint8 r, g, b, a;
+    SDL_GetRGBA(in_pixels[i], format, NULL, &r, &g, &b, &a);
+    Uint8 eq_val = lut[r];
+    out_pixels[i] = SDL_MapRGBA(format, NULL, eq_val, eq_val, eq_val, a);
+  }
+
+  SDL_UnlockSurface(surfaceEqualized);
+  SDL_UnlockSurface(surfaceFilter);
+
+  currentSurface = surfaceEqualized;
+  Image_update_texture_with_surface(image, renderer, surfaceEqualized);
+
+  SDL_Log("\tEqualização de histograma concluída com sucesso.");
+  SDL_Log("<<< Image_equalize()");
+  return true;
+}
+
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
+
+bool Image_show_original(Image *image, SDL_Renderer *renderer)
+{
+  SDL_Log(">>> Image_show_original()");
+
+  if (!image)
+  {
+    SDL_Log("\t*** Erro: Imagem inválida (image == NULL).");
+    SDL_Log("<<< Image_show_original()");
+    return false;
+  }
+
+  if (!renderer)
+  {
+    SDL_Log("\t*** Erro: Renderer inválido (renderer == NULL).");
+    SDL_Log("<<< Image_show_original()");
+    return false;
+  }
+
+  if (!surfaceFilter)
+  {
+    SDL_Log("\t*** Erro: Superfície original ausente.");
+    SDL_Log("<<< Image_show_original()");
+    return false;
+  }
+
+  currentSurface = surfaceFilter;
+  bool result = Image_update_texture_with_surface(image, renderer, surfaceFilter);
+
+  SDL_Log("\tExibindo imagem em escala de cinza original (sem reabrir arquivo).");
+  SDL_Log("<<< Image_show_original()");
+  return result;
+}
+
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
+
 void Image_destroy(Image *image)
 {
   SDL_Log(">>> Image_destroy()");
@@ -209,6 +349,21 @@ void Image_destroy(Image *image)
     image->surface = NULL;
   }
 
+  if (surfaceEqualized)
+  {
+    SDL_Log("\tDestruindo surfaceEqualized...");
+    SDL_DestroySurface(surfaceEqualized);
+    surfaceEqualized = NULL;
+  }
+
+  if (surfaceFilter)
+  {
+    SDL_Log("\tDestruindo surfaceFilter...");
+    SDL_DestroySurface(surfaceFilter);
+    surfaceFilter = NULL;
+  }
+  currentSurface = NULL;
+
   SDL_Log("\tRedefinindo Image->rect...");
   image->rect.x = image->rect.y = image->rect.w = image->rect.h = 0.0f;
 
@@ -226,7 +381,7 @@ bool Image_load(const char *filename, SDL_Renderer *renderer, Image *output_imag
   if (!filename)
   {
     SDL_Log("\t*** Erro: Nome do arquivo inválido (filename == NULL).");
-    SDL_Log("<<< Image_load(\"%s\")", filename);
+    SDL_Log("<<< Image_load((null))");
     return false;
   }
   if (!validar_extensao(filename))
@@ -294,7 +449,10 @@ void Image_calculate_statistics(Image *image, unsigned int histogram[256], float
   if (!image)
     return;
 
-  SDL_Surface *target = surfaceFilter ? surfaceFilter : image->surface;
+  memset(histogram, 0, 256 * sizeof(unsigned int));
+
+  SDL_Surface *target =
+      currentSurface ? currentSurface : (surfaceFilter ? surfaceFilter : image->surface);
   if (!target)
     return;
 
@@ -329,8 +487,8 @@ void Image_calculate_statistics(Image *image, unsigned int histogram[256], float
 
   SDL_UnlockSurface(target);
 
-  const char *brilho = (*mean > 127.5f) ? "Clara" : "Escura";
-  const char *contraste = (*std_dev > 50.0f) ? "Alto" : "Baixo";
+  const char *brilho = (*mean < 85.0f) ? "Escura" : ((*mean <= 170.0f) ? "Média" : "Clara");
+  const char *contraste = (*std_dev < 30.0f) ? "Baixo" : ((*std_dev <= 60.0f) ? "Médio" : "Alto");
 
   SDL_Log("--- Estatisticas do Histograma ---");
   SDL_Log("Media de Intensidade: %.2f (Imagem %s)", *mean, brilho);

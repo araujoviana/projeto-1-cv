@@ -38,12 +38,13 @@ projeto-1-cv
 # Program output
 output_image.png
 
-# Tests (TDD local — nunca versionados)
+# Tests (TDD local - nunca versionados)
 /tests/
 
-# Instruções e config de agente — locais, fora do repositório
+# Instruções e config de agente - locais, fora do repositório
 /CLAUDE.md
 /.claude/
+/HANDOFF.md
 
 # Editors / OS / tooling
 .vscode/
