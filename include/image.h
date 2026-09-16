@@ -23,6 +23,7 @@ bool Image_load(const char *filename, SDL_Renderer *renderer, Image *output_imag
 bool Image_convert(Image *image, SDL_Renderer *renderer);
 bool Image_equalize(Image *image, SDL_Renderer *renderer);
 bool Image_show_original(Image *image, SDL_Renderer *renderer);
+bool Image_save_current(const char *filename);
 
 void Image_destroy(Image *image);
 void Image_set_bounds(Image *image, float x, float y, float width, float height);

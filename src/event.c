@@ -46,6 +46,13 @@ void Event_loop(MainWindow *mw, HistogramWindow *hw)
         isRunning = false;
         break;
 
+      case SDL_EVENT_KEY_DOWN:
+        if (event.key.windowID == mw_id && event.key.key == SDLK_S && !event.key.repeat)
+        {
+          Image_save_current("output_image.png");
+        }
+        break;
+
       case SDL_EVENT_MOUSE_MOTION:
         if (event.motion.windowID == mw_id)
         {
