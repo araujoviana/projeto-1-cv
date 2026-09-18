@@ -227,6 +227,8 @@ bool HistogramWindow_initialize(HistogramWindow *hw, const char *title)
   hw->std_dev = 0.0f;
   hw->btn1_hover = false;
   hw->btn2_hover = false;
+  hw->btn1_pressed = false;
+  hw->btn2_pressed = false;
 
   // Define buttons bounds (bottom of window)
   float btn_w = 200.0f;
@@ -283,12 +285,10 @@ void HistogramWindow_render(HistogramWindow *hw, MainWindow *mw)
 {
   SDL_Renderer *renderer = hw->window.renderer;
 
-  // Background: Dark Gray
   SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
   SDL_RenderClear(renderer);
 
-  // Draw Histogram
-  // Find max value for scaling
+  // Maior valor do histograma, usado para escalar a altura das barras
   unsigned int max_val = 1;
   for (int i = 0; i < 256; ++i)
   {
@@ -298,11 +298,11 @@ void HistogramWindow_render(HistogramWindow *hw, MainWindow *mw)
 
   float hist_x_start = 50.0f;
   float hist_y_start = 300.0f; // bottom of histogram
-  float hist_width = 540.0f;   // fits nicely
+  float hist_width = 540.0f;   // largura da janela menos as margens de 50px de cada lado
   float hist_height = 200.0f;
   float bar_width = hist_width / 256.0f;
 
-  SDL_SetRenderDrawColor(renderer, 100, 200, 100, 255); // Green bars
+  SDL_SetRenderDrawColor(renderer, 100, 200, 100, 255);
   for (int i = 0; i < 256; ++i)
   {
     float h = ((float)hw->histogram[i] / max_val) * hist_height;
@@ -310,15 +310,15 @@ void HistogramWindow_render(HistogramWindow *hw, MainWindow *mw)
     SDL_RenderFillRect(renderer, &bar);
   }
 
-  // Draw axes
   SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-  SDL_RenderLine(renderer, hist_x_start, hist_y_start, hist_x_start + hist_width,
-                 hist_y_start); // X axis
-  SDL_RenderLine(renderer, hist_x_start, hist_y_start, hist_x_start,
-                 hist_y_start - hist_height); // Y axis
+  SDL_RenderLine(renderer, hist_x_start, hist_y_start, hist_x_start + hist_width, hist_y_start);
+  SDL_RenderLine(renderer, hist_x_start, hist_y_start, hist_x_start, hist_y_start - hist_height);
 
-  // Draw buttons
-  if (hw->btn1_hover)
+  if (hw->btn1_pressed)
+  {
+    SDL_SetRenderDrawColor(renderer, 30, 70, 130, 255); // Azul escuro (clicado)
+  }
+  else if (hw->btn1_hover)
   {
     SDL_SetRenderDrawColor(renderer, 100, 160, 220, 255); // Azul claro (hover)
   }
@@ -328,7 +328,11 @@ void HistogramWindow_render(HistogramWindow *hw, MainWindow *mw)
   }
   SDL_RenderFillRect(renderer, &hw->btn1_rect);
 
-  if (hw->btn2_hover)
+  if (hw->btn2_pressed)
+  {
+    SDL_SetRenderDrawColor(renderer, 30, 70, 130, 255); // Azul escuro (clicado)
+  }
+  else if (hw->btn2_hover)
   {
     SDL_SetRenderDrawColor(renderer, 100, 160, 220, 255); // Azul claro (hover)
   }
@@ -338,12 +342,10 @@ void HistogramWindow_render(HistogramWindow *hw, MainWindow *mw)
   }
   SDL_RenderFillRect(renderer, &hw->btn2_rect);
 
-  // Button borders
   SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
   SDL_RenderRect(renderer, &hw->btn1_rect);
   SDL_RenderRect(renderer, &hw->btn2_rect);
 
-  // Text rendering
   if (hw->font)
   {
     SDL_Color textColor = {255, 255, 255, 255};
@@ -359,7 +361,6 @@ void HistogramWindow_render(HistogramWindow *hw, MainWindow *mw)
              contraste);
     render_text(renderer, hw->font, statBuf, 50.0f, 350.0f, textColor);
 
-    // Button text
     const char *btn1_text = (mw && mw->equalized) ? "Ver original" : "Equalizar";
     const char *btn2_text = (mw && mw->resolution_is_original) ? "1024x768" : "Resolução original";
 

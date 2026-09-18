@@ -84,10 +84,10 @@ void Event_loop(MainWindow *mw, HistogramWindow *hw)
           if (is_point_in_rect(x, y, &hw->btn1_rect))
           {
             SDL_Log("[Ação] Botão de equalização clicado!");
-            SDL_SetRenderDrawColor(hw->window.renderer, 30, 70, 130, 255);
-            SDL_RenderFillRect(hw->window.renderer, &hw->btn1_rect);
-            SDL_RenderPresent(hw->window.renderer);
+            hw->btn1_pressed = true;
+            HistogramWindow_render(hw, mw);
             SDL_Delay(80); // deixa o estado "clicado" visivel antes de redesenhar
+            hw->btn1_pressed = false;
 
             MainWindow_toggle_equalization(mw);
             HistogramWindow_update_statistics(hw, mw);
@@ -95,10 +95,10 @@ void Event_loop(MainWindow *mw, HistogramWindow *hw)
           else if (is_point_in_rect(x, y, &hw->btn2_rect))
           {
             SDL_Log("[Ação] Botão de alternância de resolução clicado!");
-            SDL_SetRenderDrawColor(hw->window.renderer, 30, 70, 130, 255);
-            SDL_RenderFillRect(hw->window.renderer, &hw->btn2_rect);
-            SDL_RenderPresent(hw->window.renderer);
+            hw->btn2_pressed = true;
+            HistogramWindow_render(hw, mw);
             SDL_Delay(80); // deixa o estado "clicado" visivel antes de redesenhar
+            hw->btn2_pressed = false;
 
             MainWindow_toggle_resolution(mw);
             HistogramWindow_render(hw, mw);

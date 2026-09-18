@@ -14,8 +14,6 @@ static SDL_Cursor *defaultMouseCursor = NULL;
 static SDL_Cursor *hourglassMouseCursor = NULL;
 
 //------------------------------------------------------------------------------
-//
-//------------------------------------------------------------------------------
 
 void Image_set_bounds(Image *image, float x, float y, float width, float height)
 {
@@ -27,8 +25,6 @@ void Image_set_bounds(Image *image, float x, float y, float width, float height)
   image->rect.h = height;
 }
 
-//------------------------------------------------------------------------------
-//
 //------------------------------------------------------------------------------
 
 static bool validar_extensao(const char *file)
@@ -48,8 +44,6 @@ static bool validar_extensao(const char *file)
   return false;
 }
 
-//------------------------------------------------------------------------------
-//
 //------------------------------------------------------------------------------
 bool Image_convert(Image *image, SDL_Renderer *renderer)
 {
@@ -135,8 +129,6 @@ bool Image_convert(Image *image, SDL_Renderer *renderer)
 }
 
 //------------------------------------------------------------------------------
-//
-//------------------------------------------------------------------------------
 bool Image_update_texture_with_surface(Image *image, SDL_Renderer *renderer, SDL_Surface *surface)
 {
   SDL_Log(">>> Image_update_texture_with_surface()");
@@ -171,20 +163,12 @@ bool Image_update_texture_with_surface(Image *image, SDL_Renderer *renderer, SDL
     SDL_Log("<<< Image_update_texture_with_surface()");
     return false;
   }
-  /*
-    image->rect.x = 0.0f;
-    image->rect.y = 0.0f;
-    image->rect.w = (float)surface->w;
-    image->rect.h = (float)surface->h;
-  */
   SDL_Log("\tRect da imagem: %.0fx%.0f", image->rect.w, image->rect.h);
 
   SDL_Log("<<< Image_update_texture_with_surface()");
   return true;
 }
 
-//------------------------------------------------------------------------------
-//
 //------------------------------------------------------------------------------
 
 bool Image_equalize(Image *image, SDL_Renderer *renderer)
@@ -214,8 +198,7 @@ bool Image_equalize(Image *image, SDL_Renderer *renderer)
 
   if (!surfaceEqualized)
   {
-    surfaceEqualized =
-        SDL_CreateSurface(surfaceFilter->w, surfaceFilter->h, surfaceFilter->format);
+    surfaceEqualized = SDL_CreateSurface(surfaceFilter->w, surfaceFilter->h, surfaceFilter->format);
     if (!surfaceEqualized)
     {
       SDL_Log("\t*** Erro ao criar superfície equalizada: %s", SDL_GetError());
@@ -284,8 +267,6 @@ bool Image_equalize(Image *image, SDL_Renderer *renderer)
 }
 
 //------------------------------------------------------------------------------
-//
-//------------------------------------------------------------------------------
 
 bool Image_show_original(Image *image, SDL_Renderer *renderer)
 {
@@ -320,8 +301,6 @@ bool Image_show_original(Image *image, SDL_Renderer *renderer)
   return result;
 }
 
-//------------------------------------------------------------------------------
-//
 //------------------------------------------------------------------------------
 
 void Image_destroy(Image *image)
@@ -370,8 +349,6 @@ void Image_destroy(Image *image)
   SDL_Log("<<< Image_destroy()");
 }
 
-//------------------------------------------------------------------------------
-//
 //------------------------------------------------------------------------------
 
 bool Image_load(const char *filename, SDL_Renderer *renderer, Image *output_image)
@@ -438,8 +415,6 @@ bool Image_load(const char *filename, SDL_Renderer *renderer, Image *output_imag
   return true;
 }
 
-//------------------------------------------------------------------------------
-//
 //------------------------------------------------------------------------------
 
 void Image_calculate_statistics(Image *image, unsigned int histogram[256], float *mean,

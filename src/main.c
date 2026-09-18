@@ -1,4 +1,13 @@
 //------------------------------------------------------------------------------
+// Projeto de Computação Visual
+//
+// Matheus Gabriel Viana Araujo   10420444
+// Eduardo Takashi Missaka        10417877
+// Arthur Meneses Neves           10425727
+// João Victor Vidal Barbosa      10410165
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
 // Includes
 //------------------------------------------------------------------------------
 
@@ -48,6 +57,7 @@ int main(int argc, char *argv[])
   {
     return SDL_APP_FAILURE;
   }
+  SDL_SetWindowParent(hw.window.window, mw.window.window);
 
   if (!MainWindow_load_image(&mw, IMAGE_FILENAME))
   {

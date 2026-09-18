@@ -29,6 +29,8 @@ typedef struct
   SDL_FRect btn2_rect;
   bool btn1_hover;
   bool btn2_hover;
+  bool btn1_pressed;
+  bool btn2_pressed;
   TTF_Font *font;
   char title[64];
 } HistogramWindow;
