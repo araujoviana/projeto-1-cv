@@ -23,6 +23,13 @@ else
 CFLAGS  += -O2
 endif
 
+# Permite "make run caminho/da/imagem.ext": os argumentos apos "run" sao
+# repassados ao programa em vez de serem interpretados como alvos do make.
+ifeq (run,$(firstword $(MAKECMDGOALS)))
+RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+$(eval $(RUN_ARGS):;@:)
+endif
+
 ifeq ($(OS),Windows_NT)
 TARGET  := projeto-1-cv.exe
 LDLIBS  += $(LIB_DIR)/SDL3.dll $(LIB_DIR)/SDL3_image.dll $(LIB_DIR)/SDL3_ttf.dll
@@ -49,7 +56,7 @@ $(BUILD_DIR):
 	@if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
 
 run: $(TARGET)
-	$(TARGET)
+	$(TARGET) $(RUN_ARGS)
 
 clean:
 	@if exist $(BUILD_DIR) rmdir /S /Q $(BUILD_DIR)
@@ -87,7 +94,7 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 run: $(TARGET)
-	./$(TARGET)
+	./$(TARGET) $(RUN_ARGS)
 
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
