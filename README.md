@@ -3,6 +3,11 @@
 Projeto 1 - Computação Visual (UPM FCI CC), 2026.2.
 Ferramenta de processamento de imagens em C + SDL3.
 
+Os textos da interface usam a família **Liberation Sans** (licença SIL OFL,
+metricamente compatível com a Arial), distribuída no arquivo
+`assets/LiberationSans-Regular.ttf`. O programa monta o caminho a partir do
+diretório do executável, sem depender de fontes instaladas no sistema.
+
 > Este README é preenchido pelos integrantes do grupo. Os itens abaixo são exigidos
 > pela rubrica (arquivo estruturado, com explicações detalhadas). Substitua cada `TODO`.
 
@@ -45,6 +50,10 @@ make clean
 ```sh
 ./projeto-1-cv caminho/para/imagem.png
 ```
+
+Durante a execução, pressione `S` com foco na janela principal para salvar a
+imagem atualmente exibida em `output_image.png`. O terminal informa se o arquivo
+foi criado ou sobrescrito.
 
 ### Ambientes usados pelo grupo
 

@@ -252,7 +252,15 @@ bool HistogramWindow_initialize(HistogramWindow *hw, const char *title)
 
   SDL_SetWindowPosition(hw->window.window, 0, 0);
 
-  const char *font_paths[] = {"C:/Windows/Fonts/arial.ttf",
+  const char *base_path = SDL_GetBasePath();
+  char font_path[512] = {0};
+  if (base_path)
+  {
+    snprintf(font_path, sizeof(font_path), "%sassets/LiberationSans-Regular.ttf", base_path);
+  }
+
+  const char *font_paths[] = {font_path,
+                              "C:/Windows/Fonts/arial.ttf",
                               "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
                               "/usr/share/fonts/TTF/DejaVuSans.ttf",
                               "/usr/share/fonts/liberation/LiberationSans-Regular.ttf",

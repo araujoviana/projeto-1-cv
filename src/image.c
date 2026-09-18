@@ -6,6 +6,7 @@
 #include <SDL3_image/SDL_image.h>
 #include <string.h>
 #include <math.h>
+#include <stdio.h>
 
 static SDL_Surface *surfaceFilter = NULL;
 static SDL_Surface *surfaceEqualized = NULL;
@@ -301,6 +302,36 @@ bool Image_show_original(Image *image, SDL_Renderer *renderer)
   return result;
 }
 
+//------------------------------------------------------------------------------
+
+bool Image_save_current(const char *filename)
+{
+  if (!filename || !currentSurface)
+  {
+    SDL_Log("Erro ao salvar imagem: nenhuma imagem esta sendo exibida.");
+    return false;
+  }
+
+  bool overwritten = false;
+  FILE *existing_file = fopen(filename, "rb");
+  if (existing_file)
+  {
+    overwritten = true;
+    fclose(existing_file);
+  }
+
+  if (!IMG_Save(currentSurface, filename))
+  {
+    SDL_Log("Erro ao salvar %s: %s", filename, SDL_GetError());
+    return false;
+  }
+
+  SDL_Log("arquivo %s %s", filename, overwritten ? "sobrescrito" : "criado");
+  return true;
+}
+
+//------------------------------------------------------------------------------
+//
 //------------------------------------------------------------------------------
 
 void Image_destroy(Image *image)
