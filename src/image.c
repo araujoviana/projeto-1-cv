@@ -215,8 +215,7 @@ bool Image_equalize(Image *image, SDL_Renderer *renderer)
 
   if (!surfaceEqualized)
   {
-    surfaceEqualized =
-        SDL_CreateSurface(surfaceFilter->w, surfaceFilter->h, surfaceFilter->format);
+    surfaceEqualized = SDL_CreateSurface(surfaceFilter->w, surfaceFilter->h, surfaceFilter->format);
     if (!surfaceEqualized)
     {
       SDL_Log("\t*** Erro ao criar superfície equalizada: %s", SDL_GetError());
@@ -347,8 +346,7 @@ bool Image_save_current(const char *filename)
     return false;
   }
 
-  printf("arquivo %s %s\n", filename, overwritten ? "sobrescrito" : "criado");
-  fflush(stdout);
+  SDL_Log("arquivo %s %s", filename, overwritten ? "sobrescrito" : "criado");
   return true;
 }
 

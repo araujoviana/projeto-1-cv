@@ -254,7 +254,7 @@ bool HistogramWindow_initialize(HistogramWindow *hw, const char *title)
   char font_path[512] = {0};
   if (base_path)
   {
-    snprintf(font_path, sizeof(font_path), "%sassets/Arial.ttf", base_path);
+    snprintf(font_path, sizeof(font_path), "%sassets/LiberationSans-Regular.ttf", base_path);
   }
 
   const char *font_paths[] = {font_path,
