@@ -1,31 +1,23 @@
-# projeto-1-cv
+# Projeto 1 de Computação Visual
 
 Projeto 1 - Computação Visual (UPM FCI CC), 2026.2.
-Ferramenta de processamento de imagens em C + SDL3.
+Processamento de imagens em C + SDL3.
 
-Os textos da interface usam a família **Liberation Sans** (licença SIL OFL,
-metricamente compatível com a Arial), distribuída no arquivo
-`assets/LiberationSans-Regular.ttf`. O programa monta o caminho a partir do
-diretório do executável, sem depender de fontes instaladas no sistema.
 
 > Este README é preenchido pelos integrantes do grupo. Os itens abaixo são exigidos
 > pela rubrica (arquivo estruturado, com explicações detalhadas). Substitua cada `TODO`.
 
 ## Grupo
 
-<!-- TODO: Nome completo + RA de cada integrante -->
 
 ## O que é o projeto
 
-<!-- TODO: descrição do software e do que ele faz -->
 
 ## Como funciona
 
-<!-- TODO: visão geral do funcionamento (janelas, fluxo, operações de imagem) -->
 
 ## Contribuições
 
-<!-- TODO: o que cada integrante implementou -->
 
 ## Compilação e execução
 
@@ -57,7 +49,6 @@ foi criado ou sobrescrito.
 
 ### Ambientes usados pelo grupo
 
-<!-- TODO: SO + versão, compilador + versão, SDL + versão, editor - de cada integrante -->
 
 ## Licença
 
