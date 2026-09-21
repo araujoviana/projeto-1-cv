@@ -46,10 +46,17 @@ void Event_loop(MainWindow *mw, HistogramWindow *hw)
         isRunning = false;
         break;
 
+      case SDL_EVENT_WINDOW_RESIZED:
+        if (event.window.windowID == mw_id)
+        {
+          MainWindow_render(mw); // o tamanho so muda de fato apos o evento, redesenha com ele
+        }
+        break;
+
       case SDL_EVENT_KEY_DOWN:
         if (event.key.windowID == mw_id && event.key.key == SDLK_S && !event.key.repeat)
         {
-          Image_save_current("output_image.png");
+          Image_save_current("output_image.png", (int)mw->image.rect.w, (int)mw->image.rect.h);
         }
         break;
 

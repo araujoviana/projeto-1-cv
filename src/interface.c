@@ -15,7 +15,7 @@ enum constants
   MAIN_WINDOW_WIDTH = 1024,
   MAIN_WINDOW_HEIGHT = 768,
   HISTOGRAM_WINDOW_WIDTH = 640,
-  HISTOGRAM_WINDOW_HEIGHT = 480,
+  HISTOGRAM_WINDOW_HEIGHT = 540,
   DEFAULT_WINDOW_TITLE_MAX_LENGTH = 64,
 };
 
@@ -95,16 +95,14 @@ void MainWindow_toggle_equalization(MainWindow *mw)
   if (!mw)
     return;
 
-  if (mw->equalized)
+  bool ok = mw->equalized ? Image_show_original(&mw->image, mw->window.renderer)
+                          : Image_equalize(&mw->image, mw->window.renderer);
+  if (!ok)
   {
-    Image_show_original(&mw->image, mw->window.renderer);
-    mw->equalized = false;
+    SDL_Log("*** Erro: nao foi possivel alternar a equalizacao.");
+    return;
   }
-  else
-  {
-    Image_equalize(&mw->image, mw->window.renderer);
-    mw->equalized = true;
-  }
+  mw->equalized = !mw->equalized;
   MainWindow_render(mw);
 }
 
@@ -234,16 +232,18 @@ bool HistogramWindow_initialize(HistogramWindow *hw, const char *title)
   float btn_w = 200.0f;
   float btn_h = 40.0f;
   float padding = 40.0f;
+  float button_gap = 15.0f;
 
   hw->btn1_rect.w = btn_w;
   hw->btn1_rect.h = btn_h;
-  hw->btn1_rect.x = padding;
-  hw->btn1_rect.y = HISTOGRAM_WINDOW_HEIGHT - btn_h - padding;
-
   hw->btn2_rect.w = btn_w;
   hw->btn2_rect.h = btn_h;
-  hw->btn2_rect.x = HISTOGRAM_WINDOW_WIDTH - btn_w - padding;
+  hw->btn2_rect.x = (HISTOGRAM_WINDOW_WIDTH - btn_w) / 2.0f;
   hw->btn2_rect.y = HISTOGRAM_WINDOW_HEIGHT - btn_h - padding;
+
+  // Botao de equalizacao fica logo acima do botao de resolucao
+  hw->btn1_rect.x = hw->btn2_rect.x;
+  hw->btn1_rect.y = hw->btn2_rect.y - btn_h - button_gap;
 
   if (!Window_initialize(&hw->window, title, HISTOGRAM_WINDOW_WIDTH, HISTOGRAM_WINDOW_HEIGHT, 0))
   {

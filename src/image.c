@@ -11,8 +11,16 @@
 static SDL_Surface *surfaceFilter = NULL;
 static SDL_Surface *surfaceEqualized = NULL;
 static SDL_Surface *currentSurface = NULL;
-static SDL_Cursor *defaultMouseCursor = NULL;
-static SDL_Cursor *hourglassMouseCursor = NULL;
+
+//------------------------------------------------------------------------------
+
+// Luminancia (Y) do pixel; pixels que ja sao cinza (R == G == B) sao mantidos.
+static Uint8 pixel_luminance(Uint8 r, Uint8 g, Uint8 b)
+{
+  if (r == g && g == b)
+    return r;
+  return (Uint8)(0.2125 * r + 0.7154 * g + 0.0721 * b);
+}
 
 //------------------------------------------------------------------------------
 
@@ -76,7 +84,6 @@ bool Image_convert(Image *image, SDL_Renderer *renderer)
   }
 
   SDL_Log("\tExecutando analise da imagem");
-  SDL_SetCursor(hourglassMouseCursor);
 
   SDL_LockSurface(image->surface);
   SDL_LockSurface(surfaceFilter);
@@ -87,7 +94,6 @@ bool Image_convert(Image *image, SDL_Renderer *renderer)
   Uint8 r = 0;
   Uint8 g = 0;
   Uint8 b = 0;
-  Uint8 y = 0;
   bool escala_cinza = true;
 
   for (int row = 0; row < image->surface->h; ++row)
@@ -103,8 +109,8 @@ bool Image_convert(Image *image, SDL_Renderer *renderer)
       else
       {
         escala_cinza = false;
-        y = 0.2125 * r + 0.7154 * g + 0.0721 * b;
-        output[index] = SDL_MapRGB(format, NULL, (Uint8)y, (Uint8)y, (Uint8)y);
+        Uint8 y = pixel_luminance(r, g, b);
+        output[index] = SDL_MapRGB(format, NULL, y, y, y);
       }
     }
   }
@@ -112,7 +118,11 @@ bool Image_convert(Image *image, SDL_Renderer *renderer)
   SDL_UnlockSurface(surfaceFilter);
   SDL_UnlockSurface(image->surface);
 
-  Image_update_texture_with_surface(image, renderer, surfaceFilter);
+  if (!Image_update_texture_with_surface(image, renderer, surfaceFilter))
+  {
+    SDL_Log("<<< Image_convert");
+    return false;
+  }
   currentSurface = surfaceFilter;
 
   if (!escala_cinza)
@@ -123,7 +133,6 @@ bool Image_convert(Image *image, SDL_Renderer *renderer)
   {
     SDL_Log("\tImagem já está em escala de cinza...");
   }
-  SDL_SetCursor(defaultMouseCursor);
 
   SDL_Log("<<< Image_convert");
   return true;
@@ -259,8 +268,12 @@ bool Image_equalize(Image *image, SDL_Renderer *renderer)
   SDL_UnlockSurface(surfaceEqualized);
   SDL_UnlockSurface(surfaceFilter);
 
+  if (!Image_update_texture_with_surface(image, renderer, surfaceEqualized))
+  {
+    SDL_Log("<<< Image_equalize()");
+    return false;
+  }
   currentSurface = surfaceEqualized;
-  Image_update_texture_with_surface(image, renderer, surfaceEqualized);
 
   SDL_Log("\tEqualização de histograma concluída com sucesso.");
   SDL_Log("<<< Image_equalize()");
@@ -294,17 +307,20 @@ bool Image_show_original(Image *image, SDL_Renderer *renderer)
     return false;
   }
 
-  currentSurface = surfaceFilter;
   bool result = Image_update_texture_with_surface(image, renderer, surfaceFilter);
+  if (result)
+  {
+    currentSurface = surfaceFilter;
+    SDL_Log("\tExibindo imagem em escala de cinza original (sem reabrir arquivo).");
+  }
 
-  SDL_Log("\tExibindo imagem em escala de cinza original (sem reabrir arquivo).");
   SDL_Log("<<< Image_show_original()");
   return result;
 }
 
 //------------------------------------------------------------------------------
 
-bool Image_save_current(const char *filename)
+bool Image_save_current(const char *filename, int width, int height)
 {
   if (!filename || !currentSurface)
   {
@@ -320,7 +336,26 @@ bool Image_save_current(const char *filename)
     fclose(existing_file);
   }
 
-  if (!IMG_Save(currentSurface, filename))
+  // Salva o que esta na tela: se a janela nao exibe a resolucao original, reescala.
+  SDL_Surface *to_save = currentSurface;
+  bool scaled =
+      (width > 0 && height > 0 && (width != currentSurface->w || height != currentSurface->h));
+  if (scaled)
+  {
+    to_save = SDL_ScaleSurface(currentSurface, width, height, SDL_SCALEMODE_LINEAR);
+    if (!to_save)
+    {
+      SDL_Log("Erro ao redimensionar a imagem para salvar: %s", SDL_GetError());
+      return false;
+    }
+  }
+
+  bool saved = IMG_Save(to_save, filename);
+  if (scaled)
+  {
+    SDL_DestroySurface(to_save);
+  }
+  if (!saved)
   {
     SDL_Log("Erro ao salvar %s: %s", filename, SDL_GetError());
     return false;
@@ -471,7 +506,7 @@ void Image_calculate_statistics(Image *image, unsigned int histogram[256], float
   {
     Uint8 r, g, b;
     SDL_GetRGB(pixels[i], format, NULL, &r, &g, &b);
-    Uint8 lum = (r == g && g == b) ? r : (Uint8)(0.2125 * r + 0.7154 * g + 0.0721 * b);
+    Uint8 lum = pixel_luminance(r, g, b);
     histogram[lum]++;
     sum += lum;
   }
@@ -483,7 +518,7 @@ void Image_calculate_statistics(Image *image, unsigned int histogram[256], float
   {
     Uint8 r, g, b;
     SDL_GetRGB(pixels[i], format, NULL, &r, &g, &b);
-    Uint8 lum = (r == g && g == b) ? r : (Uint8)(0.2125 * r + 0.7154 * g + 0.0721 * b);
+    Uint8 lum = pixel_luminance(r, g, b);
     float diff = lum - *mean;
     sum_sq_diff += diff * diff;
   }
