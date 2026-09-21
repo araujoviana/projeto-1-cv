@@ -1,3 +1,9 @@
+// Copyright (c) 2026 Andre Kishimoto - https://kishimoto.com.br/
+// Copyright (c) 2026 Matheus Gabriel Viana Araujo, Eduardo Takashi Missaka,
+//                    Arthur Meneses Neves, João Victor Vidal Barbosa
+// SPDX-License-Identifier: Apache-2.0
+// Derivado de https://github.com/profkishimoto/CompVis262. Modificado pelo grupo.
+
 //------------------------------------------------------------------------------
 // Projeto de Computação Visual
 //

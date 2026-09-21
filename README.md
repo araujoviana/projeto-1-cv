@@ -93,7 +93,6 @@ No Fedora: `sudo dnf install gcc make pkgconf-pkg-config SDL3-devel SDL3_image-d
 ```sh
 make            # gera ./projeto-1-cv (projeto-1-cv.exe no Windows)
 make run        # compila e executa
-make DEBUG=1    # build com AddressSanitizer / UBSan
 make clean
 ```
 
@@ -114,10 +113,10 @@ Uma imagem de teste (`dog.jpg`) acompanha o repositório.
 
 | Integrante                   | SO                     | Compilador                        | Editor      |
 |------------------------------|------------------------|-----------------------------------|-------------|
-| Matheus Gabriel Viana Araujo | Fedora Linux 42 (WSL2) | gcc 15.2.1                        | Emacs       |
-| Arthur Meneses Neves         | Windows                | gcc (versão a informar)           | Notepad++   |
-| Eduardo Takashi Missaka      | Windows                | gcc (versão a informar)           | Notepad++   |
-| João Victor Vidal Barbosa    | Windows                | gcc (versão a informar)           | VSCode      |
+| Matheus Gabriel Viana Araujo | Fedora Linux 42 (WSL2) | gcc                              | Emacs       |
+| Arthur Meneses Neves         | Windows                | gcc                              | Notepad++   |
+| Eduardo Takashi Missaka      | Windows                | gcc                              | Notepad++   |
+| João Victor Vidal Barbosa    | Windows                | gcc                              | VSCode      |
 
 Versões das bibliotecas:
 
@@ -127,6 +126,13 @@ Versões das bibliotecas:
 | SDL3_image | 3.4.0                               | 3.4.6 (headers)                        |
 | SDL3_ttf   | 3.2.2                               | 3.3.0 (headers)                        |
 
-## Licença
+## Licença e atribuição
 
-[MIT](LICENSE). A fonte Liberation Sans é distribuída sob a SIL Open Font License.
+Este projeto é distribuído sob a [Apache License 2.0](LICENSE).
+
+Ele é derivado do código-base da disciplina,
+[CompVis262](https://github.com/profkishimoto/CompVis262) (exemplos `04-invert_image` e
+`05-filter_image`), Copyright (c) 2026 André Kishimoto, também sob Apache-2.0. Os arquivos
+derivados mantêm o aviso de copyright original e indicam as modificações feitas.
+
+A fonte Liberation Sans, em `assets/`, é distribuída sob a SIL Open Font License.

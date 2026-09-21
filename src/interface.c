@@ -1,3 +1,9 @@
+// Copyright (c) 2026 Andre Kishimoto - https://kishimoto.com.br/
+// Copyright (c) 2026 Matheus Gabriel Viana Araujo, Eduardo Takashi Missaka,
+//                    Arthur Meneses Neves, João Victor Vidal Barbosa
+// SPDX-License-Identifier: Apache-2.0
+// Derivado de https://github.com/profkishimoto/CompVis262. Modificado pelo grupo.
+
 //------------------------------------------------------------------------------
 // Includes
 //------------------------------------------------------------------------------
@@ -56,6 +62,9 @@ bool MainWindow_initialize(MainWindow *mw, const char *title)
   mw->title[sizeof(mw->title) - 1] = '\0';
 
   mw->image.surface = NULL;
+  mw->image.gray = NULL;
+  mw->image.equalized = NULL;
+  mw->image.current = NULL;
   mw->image.texture = NULL;
   mw->image.rect.x = 0.0f;
   mw->image.rect.y = 0.0f;
@@ -128,8 +137,10 @@ void MainWindow_toggle_resolution(MainWindow *mw)
   }
 
   SDL_SetWindowSize(mw->window.window, target_w, target_h);
+  SDL_SyncWindow(mw->window.window); // o resize pode ser assincrono
   Image_set_bounds(&mw->image, 0.0f, 0.0f, (float)target_w, (float)target_h);
 
+  // janela maior que a tela vai para (0,0), senao centraliza
   SDL_Rect bounds = {0};
   SDL_DisplayID display_id = SDL_GetPrimaryDisplay();
   if (display_id != 0 && SDL_GetDisplayBounds(display_id, &bounds))
@@ -148,6 +159,7 @@ void MainWindow_toggle_resolution(MainWindow *mw)
     SDL_SetWindowPosition(mw->window.window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   }
 
+  SDL_SyncWindow(mw->window.window);
   MainWindow_render(mw);
 }
 
@@ -241,7 +253,6 @@ bool HistogramWindow_initialize(HistogramWindow *hw, const char *title)
   hw->btn2_rect.x = (HISTOGRAM_WINDOW_WIDTH - btn_w) / 2.0f;
   hw->btn2_rect.y = HISTOGRAM_WINDOW_HEIGHT - btn_h - padding;
 
-  // Botao de equalizacao fica logo acima do botao de resolucao
   hw->btn1_rect.x = hw->btn2_rect.x;
   hw->btn1_rect.y = hw->btn2_rect.y - btn_h - button_gap;
 
@@ -358,6 +369,7 @@ void HistogramWindow_render(HistogramWindow *hw, MainWindow *mw)
   {
     SDL_Color textColor = {255, 255, 255, 255};
     char statBuf[128];
+    // mesmos limiares de Image_calculate_statistics
     const char *brilho = (hw->mean < 85.0f) ? "Escura" : ((hw->mean <= 170.0f) ? "Média" : "Clara");
     const char *contraste =
         (hw->std_dev < 30.0f) ? "Baixo" : ((hw->std_dev <= 60.0f) ? "Médio" : "Alto");

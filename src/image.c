@@ -1,3 +1,9 @@
+// Copyright (c) 2026 Andre Kishimoto - https://kishimoto.com.br/
+// Copyright (c) 2026 Matheus Gabriel Viana Araujo, Eduardo Takashi Missaka,
+//                    Arthur Meneses Neves, João Victor Vidal Barbosa
+// SPDX-License-Identifier: Apache-2.0
+// Derivado de https://github.com/profkishimoto/CompVis262. Modificado pelo grupo.
+
 //------------------------------------------------------------------------------
 // Includes
 //------------------------------------------------------------------------------
@@ -8,13 +14,10 @@
 #include <math.h>
 #include <stdio.h>
 
-static SDL_Surface *surfaceFilter = NULL;
-static SDL_Surface *surfaceEqualized = NULL;
-static SDL_Surface *currentSurface = NULL;
 
 //------------------------------------------------------------------------------
 
-// Luminancia (Y) do pixel; pixels que ja sao cinza (R == G == B) sao mantidos.
+// Pixel ja cinza passa direto: a formula truncada tira 1 nivel de alguns tons (ex.: 43).
 static Uint8 pixel_luminance(Uint8 r, Uint8 g, Uint8 b)
 {
   if (r == g && g == b)
@@ -72,10 +75,10 @@ bool Image_convert(Image *image, SDL_Renderer *renderer)
     return false;
   }
 
-  if (!surfaceFilter)
+  if (!image->gray)
   {
-    surfaceFilter = SDL_CreateSurface(image->surface->w, image->surface->h, image->surface->format);
-    if (!surfaceFilter)
+    image->gray = SDL_CreateSurface(image->surface->w, image->surface->h, image->surface->format);
+    if (!image->gray)
     {
       SDL_Log("*** Erro: Superfície extra (filter) inválida!");
       SDL_Log("<<< Image_convert");
@@ -86,11 +89,11 @@ bool Image_convert(Image *image, SDL_Renderer *renderer)
   SDL_Log("\tExecutando analise da imagem");
 
   SDL_LockSurface(image->surface);
-  SDL_LockSurface(surfaceFilter);
+  SDL_LockSurface(image->gray);
 
   const SDL_PixelFormatDetails *format = SDL_GetPixelFormatDetails(image->surface->format);
   Uint32 *pixels = (Uint32 *)image->surface->pixels;
-  Uint32 *output = (Uint32 *)surfaceFilter->pixels;
+  Uint32 *output = (Uint32 *)image->gray->pixels;
   Uint8 r = 0;
   Uint8 g = 0;
   Uint8 b = 0;
@@ -115,15 +118,15 @@ bool Image_convert(Image *image, SDL_Renderer *renderer)
     }
   }
 
-  SDL_UnlockSurface(surfaceFilter);
+  SDL_UnlockSurface(image->gray);
   SDL_UnlockSurface(image->surface);
 
-  if (!Image_update_texture_with_surface(image, renderer, surfaceFilter))
+  if (!Image_update_texture_with_surface(image, renderer, image->gray))
   {
     SDL_Log("<<< Image_convert");
     return false;
   }
-  currentSurface = surfaceFilter;
+  image->current = image->gray;
 
   if (!escala_cinza)
   {
@@ -199,17 +202,17 @@ bool Image_equalize(Image *image, SDL_Renderer *renderer)
     return false;
   }
 
-  if (!surfaceFilter)
+  if (!image->gray)
   {
-    SDL_Log("\t*** Erro: Superfície base (surfaceFilter) ausente.");
+    SDL_Log("\t*** Erro: Superfície base (image->gray) ausente.");
     SDL_Log("<<< Image_equalize()");
     return false;
   }
 
-  if (!surfaceEqualized)
+  if (!image->equalized)
   {
-    surfaceEqualized = SDL_CreateSurface(surfaceFilter->w, surfaceFilter->h, surfaceFilter->format);
-    if (!surfaceEqualized)
+    image->equalized = SDL_CreateSurface(image->gray->w, image->gray->h, image->gray->format);
+    if (!image->equalized)
     {
       SDL_Log("\t*** Erro ao criar superfície equalizada: %s", SDL_GetError());
       SDL_Log("<<< Image_equalize()");
@@ -217,7 +220,7 @@ bool Image_equalize(Image *image, SDL_Renderer *renderer)
     }
   }
 
-  int count = surfaceFilter->w * surfaceFilter->h;
+  int count = image->gray->w * image->gray->h;
   if (count <= 0)
   {
     SDL_Log("\t*** Erro: Dimensões da imagem inválidas.");
@@ -225,9 +228,9 @@ bool Image_equalize(Image *image, SDL_Renderer *renderer)
     return false;
   }
 
-  SDL_LockSurface(surfaceFilter);
-  const SDL_PixelFormatDetails *format = SDL_GetPixelFormatDetails(surfaceFilter->format);
-  const Uint32 *in_pixels = (const Uint32 *)surfaceFilter->pixels;
+  SDL_LockSurface(image->gray);
+  const SDL_PixelFormatDetails *format = SDL_GetPixelFormatDetails(image->gray->format);
+  const Uint32 *in_pixels = (const Uint32 *)image->gray->pixels;
 
   unsigned int hist[256] = {0};
   for (int i = 0; i < count; ++i)
@@ -237,6 +240,7 @@ bool Image_equalize(Image *image, SDL_Renderer *renderer)
     hist[r]++;
   }
 
+  // s_k = round(255 * CDF(k) / N)
   Uint8 lut[256];
   unsigned long long cum = 0;
   for (int k = 0; k < 256; ++k)
@@ -254,8 +258,8 @@ bool Image_equalize(Image *image, SDL_Renderer *renderer)
     lut[k] = (Uint8)sk;
   }
 
-  SDL_LockSurface(surfaceEqualized);
-  Uint32 *out_pixels = (Uint32 *)surfaceEqualized->pixels;
+  SDL_LockSurface(image->equalized);
+  Uint32 *out_pixels = (Uint32 *)image->equalized->pixels;
 
   for (int i = 0; i < count; ++i)
   {
@@ -265,15 +269,15 @@ bool Image_equalize(Image *image, SDL_Renderer *renderer)
     out_pixels[i] = SDL_MapRGBA(format, NULL, eq_val, eq_val, eq_val, a);
   }
 
-  SDL_UnlockSurface(surfaceEqualized);
-  SDL_UnlockSurface(surfaceFilter);
+  SDL_UnlockSurface(image->equalized);
+  SDL_UnlockSurface(image->gray);
 
-  if (!Image_update_texture_with_surface(image, renderer, surfaceEqualized))
+  if (!Image_update_texture_with_surface(image, renderer, image->equalized))
   {
     SDL_Log("<<< Image_equalize()");
     return false;
   }
-  currentSurface = surfaceEqualized;
+  image->current = image->equalized;
 
   SDL_Log("\tEqualização de histograma concluída com sucesso.");
   SDL_Log("<<< Image_equalize()");
@@ -300,17 +304,17 @@ bool Image_show_original(Image *image, SDL_Renderer *renderer)
     return false;
   }
 
-  if (!surfaceFilter)
+  if (!image->gray)
   {
     SDL_Log("\t*** Erro: Superfície original ausente.");
     SDL_Log("<<< Image_show_original()");
     return false;
   }
 
-  bool result = Image_update_texture_with_surface(image, renderer, surfaceFilter);
+  bool result = Image_update_texture_with_surface(image, renderer, image->gray);
   if (result)
   {
-    currentSurface = surfaceFilter;
+    image->current = image->gray;
     SDL_Log("\tExibindo imagem em escala de cinza original (sem reabrir arquivo).");
   }
 
@@ -320,9 +324,9 @@ bool Image_show_original(Image *image, SDL_Renderer *renderer)
 
 //------------------------------------------------------------------------------
 
-bool Image_save_current(const char *filename, int width, int height)
+bool Image_save_current(const Image *image, const char *filename, int width, int height)
 {
-  if (!filename || !currentSurface)
+  if (!image || !filename || !image->current)
   {
     SDL_Log("Erro ao salvar imagem: nenhuma imagem esta sendo exibida.");
     return false;
@@ -336,13 +340,13 @@ bool Image_save_current(const char *filename, int width, int height)
     fclose(existing_file);
   }
 
-  // Salva o que esta na tela: se a janela nao exibe a resolucao original, reescala.
-  SDL_Surface *to_save = currentSurface;
+  // a janela pode estar mostrando a imagem em outro tamanho que o original
+  SDL_Surface *to_save = image->current;
   bool scaled =
-      (width > 0 && height > 0 && (width != currentSurface->w || height != currentSurface->h));
+      (width > 0 && height > 0 && (width != image->current->w || height != image->current->h));
   if (scaled)
   {
-    to_save = SDL_ScaleSurface(currentSurface, width, height, SDL_SCALEMODE_LINEAR);
+    to_save = SDL_ScaleSurface(image->current, width, height, SDL_SCALEMODE_LINEAR);
     if (!to_save)
     {
       SDL_Log("Erro ao redimensionar a imagem para salvar: %s", SDL_GetError());
@@ -392,20 +396,20 @@ void Image_destroy(Image *image)
     image->surface = NULL;
   }
 
-  if (surfaceEqualized)
+  if (image->equalized)
   {
-    SDL_Log("\tDestruindo surfaceEqualized...");
-    SDL_DestroySurface(surfaceEqualized);
-    surfaceEqualized = NULL;
+    SDL_Log("\tDestruindo Image->equalized...");
+    SDL_DestroySurface(image->equalized);
+    image->equalized = NULL;
   }
 
-  if (surfaceFilter)
+  if (image->gray)
   {
-    SDL_Log("\tDestruindo surfaceFilter...");
-    SDL_DestroySurface(surfaceFilter);
-    surfaceFilter = NULL;
+    SDL_Log("\tDestruindo Image->gray...");
+    SDL_DestroySurface(image->gray);
+    image->gray = NULL;
   }
-  currentSurface = NULL;
+  image->current = NULL;
 
   SDL_Log("\tRedefinindo Image->rect...");
   image->rect.x = image->rect.y = image->rect.w = image->rect.h = 0.0f;
@@ -491,7 +495,7 @@ void Image_calculate_statistics(Image *image, unsigned int histogram[256], float
   memset(histogram, 0, 256 * sizeof(unsigned int));
 
   SDL_Surface *target =
-      currentSurface ? currentSurface : (surfaceFilter ? surfaceFilter : image->surface);
+      image->current ? image->current : (image->gray ? image->gray : image->surface);
   if (!target)
     return;
 
@@ -526,6 +530,7 @@ void Image_calculate_statistics(Image *image, unsigned int histogram[256], float
 
   SDL_UnlockSurface(target);
 
+  // limiares: um terco da faixa [0, 255] para a media; desvio 30/60 e escolha nossa
   const char *brilho = (*mean < 85.0f) ? "Escura" : ((*mean <= 170.0f) ? "Média" : "Clara");
   const char *contraste = (*std_dev < 30.0f) ? "Baixo" : ((*std_dev <= 60.0f) ? "Médio" : "Alto");
 
